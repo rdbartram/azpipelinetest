@@ -31,6 +31,17 @@ parameters:
     - Prod
     - Preprod
 
+# Set variables once
+variables:
+  - group: vh-domains-and-urls
+  - group: vh-apps-settings-generic
+  - group: vh-admin-web
+  - group: vh test users
+  - group: Saucelabs
+  - ${{ if containsValue(parameters.prodEnvs, parameters.environment) }}:
+    - group: vh-prod
+  - ${{ if not(containsValue(parameters.prodEnvs, parameters.environment)) }}:
+    - group: vh-preview
 
 resources:
   repositories:
