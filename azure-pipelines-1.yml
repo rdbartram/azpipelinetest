@@ -30,18 +30,19 @@ parameters:
   default:
     - Prod
     - Preprod
-
+ 
 # Set variables once
 variables:
-  - group: vh-domains-and-urls
-  - group: vh-apps-settings-generic
-  - group: vh-admin-web
-  - group: vh test users
-  - group: Saucelabs
-  - ${{ if containsValue(parameters.prodEnvs, parameters.environment) }}:
-    - group: vh-prod
-  - ${{ if not(containsValue(parameters.prodEnvs, parameters.environment)) }}:
-    - group: vh-preview
+- group: vh-domains-and-urls
+- group: vh-apps-settings-generic
+- group: vh-user-api
+- ${{ if containsValue(parameters.prodEnvs, parameters.environment) }}:
+  - group: vh-prod
+- ${{ if not(containsValue(parameters.prodEnvs, parameters.environment)) }}:
+  - group: vh-preview
+
+trigger: none
+pr: none
 
 resources:
   repositories:
@@ -52,7 +53,7 @@ resources:
       endpoint: hmcts (1)
   pipelines:
   - pipeline: CI
-    source: hmcts.vh-admin-web
+    source: hmcts.vh-user-api
     trigger:
       enabled: true
       branches:
@@ -60,184 +61,92 @@ resources:
         - hotfix/*
         - release/*
 
-trigger: none
-pr: none
-
-
-stages:
-  - template: templates/vh-release.yml@templates
-    parameters:
-      ${{ if ne(variables['Build.Reason'], 'ResourceTrigger') }}:
-        environments:
-          - ${{ parameters.environment }}
-        deploymentBranch: ${{ parameters.deploymentBranch }}
-      ${{ if eq(variables['Build.Reason'], 'ResourceTrigger') }}:
-        deploymentBranch: $(resources.pipeline.CI.sourceBranch)
-      releaseParameters:
-        runZapTests: ${{ parameters.RunZap }}
-        subscription: $(env_Subscription)
-        secrets_KeyVault: $(env_Secret_KeyVault)
-        secrets_Subscription: $(env_Secret_Subscription)
-        devOpsResource: vh_admin_web
-        appName: vh-admin-web-$(environment)
-        resourceGroup: vh-admin-web-$(environment)
-        testCaseFilter: TestCategory=smoketest
-        dependentApps:
-        - vh-user-api-$(environment)
-        - vh-bookings-api-$(environment)
-        - vh-video-api-$(environment)
-        variables:
-          - group: vh-wowza-dev
-            env:
-             - Preview
-             - Dev
-             - AAT
-             - Sandbox
-             - Test1
-             - Test2
-          - group: vh-wowza-demo
-            env:
-             - Demo
-          - group: vh-wowza-preprod
-            env:
-             - Preprod
-          - group: vh-wowza-prod
-            env:
-             - Prod
-          - group: KinlyConfiguration_Test
-            env:
-             - Preview
-             - Dev
-             - AAT
-             - Sandbox
-             - Test1
-             - Test2
-          - group: KinlyConfiguration_Test2
-            env:
-             - Demo
-          - group: KinlyConfiguration_Preprod
-            env:
-             - Preprod
-          - group: KinlyConfiguration_Prod
-            env:
-             - Prod
-        appSettings:
-          - name: ApplicationInsights:InstrumentationKey
-            value: vh-core-infra-AppInsightsKey
-            secret: true
-          - name: AppInsightsKey
-            value: vh-core-infra-AppInsightsKey
-            secret: true
-          - name: IsLive
-            value: $(IsLive)
-
-          # AzureAd
-          - name: AzureAd:ClientId
-            value: vh-admin-web-appid
-            secret: true
-          - name: AzureAd:ClientSecret
-            value: vh-admin-web-key
-            secret: true
-          - name: AzureAd:PostLogoutRedirectUri
-            slot:
-              deployment:
-                value: $(admin_web_url_staging)logout
-              active:
-                value: $(admin_web_url)logout
-          - name: AzureAd:RedirectUri
-            slot:
-              deployment:
-                value: $(admin_web_url_staging)home
-              active:
-                value: $(admin_web_url)home
-          - name: AzureAd:TenantId
-            value: tenantid
-            secret: true
-          - name: AzureAd:Authority
-            value: $(Authority)
-              
-          # Testing
-          - name: TestUserSecrets:TestUsernameStem
-            value: $(TestUserSecrets:TestUsernameStem)
-
-          # VhServices
-          - name: VhServices:BookingsApiResourceId
-            value: vh-bookings-api-identifieruris
-            secret: true
-          - name: VhServices:BookingsApiUrl
-            value: $(bookings_api_url)
-          - name: VhServices:UserApiResourceId
-            value: vh-user-api-identifieruris
-            secret: true
-          - name: VhServices:UserApiUrl
-            value: $(user_api_url)
-          - name: VhServices:VideoApiResourceId
-            value: vh-video-api-identifieruris
-            secret: true
-          - name: VhServices:VideoApiUrl
-            value: $(video_api_url)
-          - name: VhServices:ValidateEmail
-            value: $(reformemail)
-        acceptanceTestSettings:
-          # VhServices
-          - name: VhServices:AdminWebUrl
-            value: $(admin_web_url_staging)
-          - name: VhServices:AdminWebResourceId
-            value: vh-admin-web-identifieruris
-            secret: true
-          - name: VhServices:VideoApiUrl
-            value: $(video_api_url)
-          - name: VhServices:VideoApiResourceId
-            value: vh-video-api-identifieruris
-            secret: true
-          - name: VhServices:UserApiUrl
-            value: $(user_api_url)
-          - name: VhServices:UserApiResourceId
-            value: vh-user-api-identifieruris
-            secret: true
-          - name: VhServices:BookingsApiUrl
-            value: $(bookings_api_url)
-          - name: VhServices:BookingsApiResourceId
-            value: vh-bookings-api-identifieruris
-            secret: true
-
-          # AzureAd
-          - name: AzureAd:Authority
-            value: $(Authority)
-          - name: AzureAd:TenantId
-            value: tenantid
-            secret: true
-          - name: AzureAd:ClientId
-            value: vh-video-web-appid
-            secret: true
-          - name: AzureAd:ClientSecret
-            value: vh-video-web-key
-            secret: true
-          - name: AzureAd:PostLogoutRedirectUri
-            slot: true
-          - name: AzureAd:RedirectUri
-            slot: true
-          - name: AzureAd:TemporaryPassword
-            value: $(TemporaryPassword)
-
-          # Testing
-          - name: TestUserSecrets:TestUsernameStem
-            value: $(TestUserSecrets:TestUsernameStem)
-          - name: TestUserSecrets:TestUserPassword
-            value: $(TestUserSecrets:TestUserPassword)
-
-          # SauceLabs
-          - name: Saucelabs:Username
-            value: $(Saucelabs:Username)
-          - name: Saucelabs:AccessKey
-            value: $(Saucelabs:AccessKey)
-          - name: Saucelabs:RealDeviceApiKey
-            value: $(RealDeviceApiKey)
-
-          # WowzaConfiguration
-          - name: WowzaConfiguration:StorageAccountName
-            value: $(wowza_storageAccountName)
-          - name: WowzaConfiguration:StorageAccountKey
-            value: $(wowza_storageAccountKey)
-          - name: WowzaConfiguration:StorageContainerName
-            value: $(wowza_storageContainerName)
+extends:
+  template: templates/vh-release.yml@templates
+  parameters:
+    ${{ if ne(variables['Build.Reason'], 'ResourceTrigger') }}:
+      environments:
+        - ${{ parameters.environment }}
+      deploymentBranch: ${{ parameters.deploymentBranch }}
+    ${{ if eq(variables['Build.Reason'], 'ResourceTrigger') }}:
+      deploymentBranch: $(resources.pipeline.CI.sourceBranch)
+    releaseParameters:
+      runZapTests: ${{ parameters.RunZap }}
+      subscription: $(env_Subscription)
+      secrets_KeyVault: $(env_Secret_KeyVault)
+      secrets_Subscription: $(env_Secret_Subscription)
+      devOpsResource: vh_user_api
+      appName: vh-user-api-$(environment)
+      resourceGroup: vh-user-api-$(environment)
+      appSettings:
+        - name: ApplicationInsights:InstrumentationKey
+          value: vh-core-infra-AppInsightsKey
+          secret: true
+        - name: AzureAd:ClientId
+          value: vh-user-api-appid
+          secret: true
+        - name: AzureAd:ClientSecret
+          value: vh-user-api-key
+          secret: true
+        - name: AzureAd:TenantId
+          value: tenantid
+          secret: true
+        - name: VhServices:UserApiResourceId
+          value: vh-user-api-identifieruris
+          secret: true
+        - name: DefaultPassword
+          value: $(defaultPassword)
+        - name: ReformEmail
+          value: $(reformemail)
+        - name: ConnectionStrings:RedisCache
+          value: redis-connection-str
+          secret: true
+        - name: IsLive
+          slot:
+            deployment:
+              value: false
+            active:
+              value: true
+      acceptanceTestSettings:
+        - name: VhServices:UserApiUrl
+          value: $(user_api_url_staging)
+        - name: AzureAd:ClientId
+          value: vh-user-api-appid
+          secret: true
+        - name: AzureAd:ClientSecret
+          value: vh-user-api-key
+          secret: true
+        - name: AzureAd:TenantId
+          value: tenantid
+          secret: true
+        - name: VhServices:UserApiResourceId
+          value: vh-user-api-identifieruris
+          secret: true
+        - name: DefaultPassword
+          value: $(defaultPassword)
+        - name: Testing:ExistingGroups:0:Displayname
+          value: $(testing-existinggroups-0-displayname)
+        - name: Testing:ExistingGroups:0:GroupId
+          value: $(testing-existinggroups-0-groupid)
+        - name: Testing:ExistingGroups:1:Displayname
+          value: $(testing-existinggroups-1-displayname)
+        - name: Testing:ExistingGroups:1:GroupId
+          value: $(testing-existinggroups-1-groupid)
+        - name: Testing:ExistingUserDisplayname
+          value: $(testing-existinguserdisplayname)
+        - name: Testing:ExistingUserFirstname
+          value: $(testing-existinguserfirstname)
+        - name: Testing:ExistingUserId
+          value: $(testing-existinguserid)
+        - name: Testing:ExistingUserLastname
+          value: $(testing-existinguserlastname)
+        - name: Testing:ExistingUserPrincipal
+          value: $(testing-existinguserprincipal)
+        - name: Testing:ExistingEmail
+          value: $(testing-existingemail)
+        - name: Testing:NewGroups:0:Displayname
+          value: $(testing-newgroup-0-displayname)
+        - name: Testing:NewGroups:0:GroupId
+          value: $(testing-newgroup-0-groupid)
+        - name: ReformEmail
+          value: $(reformemail)
