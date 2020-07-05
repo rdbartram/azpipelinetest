@@ -1,7 +1,36 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+parameters:
+- name: deploymentBranch
+  displayName: Branch to Deploy
+  type: string
+  default: refs/heads/master
+
+- name: environment
+  displayName: Environment
+  type: string
+  default: Sandbox
+  values:
+  - Preview
+  - Dev
+  - AAT
+  - Sandbox
+  - Test1
+  - Test2
+  - Demo
+  - Preprod
+  - Prod
+
+- name: RunZap
+  displayName: Execute ZAP Tests
+  type: boolean
+  default: false
+
+- name: prodEnvs
+  displayName: Environments Using Prod Subscription
+  type: object
+  default:
+    - Prod
+    - Preprod
+
 
 resources:
   repositories:
